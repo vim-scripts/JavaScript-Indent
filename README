@@ -1,0 +1,144 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=3081
+
+Hosted at: http://code.google.com/p/web-indent/
+
+*Update: (5/14/10) - Beta 3.0 Released (See Below) (First Release Candidate)
+*Update: (5/6/10) - Beta 2.2 Released (See Below)
+*Update: (5/6/10) - Beta 2.1 Released (See Below)
+*Update: (5/5/10) - Beta 2.0 Released (See Below)
+*Update: (5/3/10) - Beta 1.0 Released (See Below)
+
+Summary:
+================================================================================
+I wrote this basically due to the lack of any good javascript indent plugin out there.  And due to javascripts lax syntactical structure cindent() just wont cut it. 
+
+Web-Indent handles all basic forms of add notes, bugs and multi-line and singe line objects: 
+var x = {
+     y : {
+           z;
+     }
+}
+
+var y = [
+      x,
+      y,
+      z
+]
+
+var z = {x : x, y : y, w: w};
+
+t; // no indent
+
+Handles all basic control structures (with or without leading '{'):
+if(x)
+      // comment
+      y;
+z;
+
+Handles inline and nextline control structure block initializers ('{' in the vernacular):
+if(x) {
+     x;
+} 
+else 
+{
+     z; 
+}
+
+Handles multi-line function declarations:
+var x = function( 
+      y, // notice one tab over
+      z,
+      w) {
+      t;
+}
+
+Handles multi-line control structure statements:
+if( x == y ||
+      y == z ||
+      z == w) 
+{
+      t;
+}
+
+This indenter is also fully compatible with Mootools and esp. its Class package.  I haven't tested it with any of the other frameworks, but due to their similar syntactical nature, I'm assuming they will work as will.
+
+Included Files:
+================================================================================
+      ~test.js - A sample js file with various coding patterns.  Set tabstop=6 and shiftwidth=6 and comments should line up correctly.
+      ~indent/javascript.vim - The core indenting file
+      ~indent/html.vim - An updated version of the pre-packaged html indenter that utilizes javascript.vim (MUST BE LOCATED IN SAME DIRECTORY!!)
+
+Release Notes:
+================================================================================
+~Beta 3.0 Released: (5/14/10)
+      - Fixed: Runaway Indentation.  
+      - Fixed: indentkeys now correctly invoke indent.
+      - Fixed: Comment lines with keywords are correctly indented.  Thanks to trojhlav for pointing it out.
+      - Notes:
+            \ First Release Candidate (v 1.0)
+            \ Correctly indented entire jQuery source.
+            \ Correctly indented entire MooTools source.
+      - Concerns: 
+            \ Still no support for continuation lines.
+~ 
+
+
+~Beta 2.2 Released: (5/6/10)
+      - Added: Support for enabling/disabling logging.  (Enabled by default.  To Disable: let g:js_indent_log = 0 somewhere in your .vimrc script)
+      - Added: Support for while() control block. 
+      - Added: Support for do {} while(); control block. 
+      - Added: Support for with() {} control block. 
+      - Added: Skeleton support for all MULTI-LINE cntrl blocks  SINGLE LINE cntrl blocks DO NOT HAVE SKELETON VERSIONS!! 
+      - Added: Skeleton support for function declarations. 
+      - Added: Skeleton support for basic objects. 
+      - Added: Tests for skeleton code.
+      - Fixed: Html indent now correctly calls GetJsIndent() while inside <script type="text/javascript"></script>
+      - Fixed: Html will now source the javascript.vim (indent file) via two methods:
+            1.  If g:js_indent is set and points to the location of the indent file, it will source it.
+            2. Looks in your runtime path for indent/javascript.vim (sources first one found)
+      - Added: Tests for HTML + JS
+      - Notes:
+            \ None
+~ 
+
+~Beta 2.1 Released: (5/6/10)
+      - Fixed: Object ending regex is now anchored to beginning and end of line and cannot contain preceding {'s or ['s.
+      - Fixed: Multi Line Invocations.  
+      - Dependencies:
+            \ Syntax Script must return *Comment* for any type of comment when invoked with synIDattr
+      - Concerns:
+            \ Multi Line Invocations must end in ; or , to be recognized (although JS doesn't specifically require this) (so as not confuse with multi line declarations)
+            \ Does not recognize continuation lines. 
+      - Notes:
+            \ Entire test.js file is now correctly indented (except for continuations)
+            \ NOW SUPPORTS SKELETON CODE
+                  if(x) {
+                  } else if(y) {
+                  } else {
+                  }
+~
+
+~Beta 2.0 Released: (5/5/10)
+      - Now hosted on Google Code: http://code.google.com/p/web-indent/
+      - Completely rewrote script
+      - Fixed: Comments are determined by synIDAttr instead of Regex
+      - Added: Anonymous function support. (function(){})();
+      - Dependencies:
+            \ None
+      - Concerns:
+            \ Too many if statements, but extremely well organized.
+            \ Sometimes vim has trouble indenting an entire file.  Have to scroll through to location above problem area and use =G again. Is this a problem with how the scripts get loaded?
+      - Notes
+            \ None
+~
+
+~ Beta 1.0 Released: (5/3/10)
+      - Initial Release
+      - Dependencies:
+            \ Javascript Syntax: http://www.vim.org/scripts/script.php?script_id=1491
+      - Concerns:
+            \ Comments are determined by regex (==> Cannot determine middle of block comments)
+            \ Code is poorly organized and hard to understand.
+~
+
+PS: I'm also not sure if I'm allowed to repost the html.vim, since I couldn't find a license for it.  I'm pretty sure it was the one packaged with vim by default.  If anyone has any objections, I'll take it down immediately.
