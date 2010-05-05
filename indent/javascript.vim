@@ -4,10 +4,10 @@
 " URL:
 " Last Change: 	April 30, 2010
 
-if exists('b:did_indent')
-  finish
-endif
-let b:did_indent = 1
+"if exists('b:did_indent')
+  "finish
+"endif
+"let b:did_indent = 1
 
 setlocal indentexpr=GetJsIndent(v:lnum)
 setlocal indentkeys=0{,0},0),:,!^F,o,O,e,*<Return>,=*/
@@ -22,7 +22,7 @@ let s:js_line_comment = '\s*\(//.*\)*'
 
 " Simple Objects
 let s:js_object_beg = '[{\[]\s*'
-let s:js_object_end = '^[^}\]][}\]][;,]\=\s*'
+let s:js_object_end = '^[^][{}]*[}\]][;,]\=\s*'
 
 " Immediately Executed Anonymous Function
 let s:js_s_anon_beg = '(\s*function\s*(.*)\s*'
@@ -45,6 +45,10 @@ let s:js_multi_beg = '([^()]*\s*'
 let s:js_s_multi_end = '^[^()]*)\s*'
 let s:js_m_multi_end = s:js_s_multi_end . '\s*{\s*'
 
+" Multi line invocation
+let s:js_multi_invok_beg = s:js_multi_beg
+let s:js_multi_invok_end = s:js_s_multi_end . '[;,]\{1}\s*'
+
 " Special switch control
 let s:js_s_switch_beg = 'switch\s*(.*)\s*' "Actually not allowed. 
 let s:js_m_switch_beg = s:js_s_switch_beg . '\s*{\s*'
@@ -53,6 +57,8 @@ let s:js_switch_mid = '\(case.*\|default\)\s*:\s*'
 
 " Single line comment (// xxx)
 let s:syn_comment = 'Comment'
+
+echo "} // 0" =~ s:js_object_end . s:js_line_comment . '$'
 
 
 " 2. Aux. Functions
@@ -173,8 +179,8 @@ function! GetJsIndent(lnum)
 
 
 
-	" Handle: Mutli-Line Invocation/Declaration
-	" ===========================================
+	" Handle: Mutli-Line Block Invocation/Function Declaration
+	" ========================================================
 	if pline =~ s:js_multi_beg . s:js_line_comment . '$'
 		echo "Pline matched multi invoke/declare"
 		return ind + &sw
@@ -208,9 +214,16 @@ function! GetJsIndent(lnum)
 		return ind - &sw
 	endif
 
+	" Handle: Multi-Line Invocation
+	" =============================
+	if line =~ s:js_multi_invok_end . s:js_line_comment . '$'
+		echo "Pline matched multi invocation end"
+		return ind - &sw
+	endif
+	
 
 	" Handle: Switch Control Blocks
-	" ===============================
+	" =============================
 	if pline =~ s:js_m_switch_beg . s:js_line_comment . '$'
 		echo "PLine matched switch cntrl beginning"
 		return ind
@@ -309,10 +322,10 @@ function! GetJsIndent(lnum)
 		endif
 	endif
 
-	if line =~ s:js_m_cntrl_end . s:js_line_comment . '$'
-		echo "Line matched multi line control end"
-		return ind - &sw
-	endif
+	"if line =~ s:js_m_cntrl_end . s:js_line_comment . '$'
+		"echo "Line matched multi line control end"
+		"return ind - &sw
+	"endif
 
 	" Handle: Basic Objects
 	" =====================
