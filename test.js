@@ -3,6 +3,7 @@
 //
 //
 
+
 // = Case: Arithmetic (1)
 var x = 1 + 1; 	// 0
 
@@ -14,6 +15,10 @@ var x = 1 + 	// 0
 var x = 1 + 	// 0
 1 +  		// 1
 1; 		// 1
+
+// = Case: Object (2) 
+var x = { y : y, z : z } 	// 0
+w; 					// 0
 
 // = Case: Object (1)
 var x = { 		// 0
@@ -287,6 +292,16 @@ finally  		// 1
 } 			// 0
 )(x); 		// 0
 
+// = Case: Multi Line Invocation (1)
+$(document).bind('click', function() { 	// 0
+}); 						 	// 0
+
+// = Case: Multi Line Invocation (2)
+$(document).bind('click', function() { 	// 0
+	x; 						// 1
+	y; 						// 1
+}); 							// 0
+
 
 // = Case: COMPLEX
 (function(window, undefined) { 				// 0
@@ -332,6 +347,66 @@ finally  		// 1
 		// 							// 2
 		blah: function(haha) { 				// 2 
 			return this.test; 			// 3
+		} 							// 2
+	}); 								// 1
+})(this); 								// 0
+
+
+// Case: SKELETON CODE
+(function(window, undefined) { 				// 0
+	var Skeleton = new Class({ 				// 1
+	}); 								// 1
+
+	var Skeleton2 = new Class({ 				// 1
+		Extends: Skeleton 				// 2
+	}); 								// 1
+
+	var Skeleton3 = new Class({ 				// 1
+		skeleton: function() {  			// 2
+		}, 							// 2
+
+		objects: function() { 				// 2
+			var x, y; 					// 3
+
+			x = {}; 					// 3
+			y = []; 					// 3 
+
+			x = { 					// 3
+			}; 						// 3
+
+			y =  [ 					// 3
+			]; 						// 3
+
+		}, 							// 2
+
+		contrls: function() { 				// 2
+			while(true) { 				// 3
+			} 						// 3
+
+			do { 						// 3
+			} while(true); 				// 3
+
+			with(x) { 					// 3
+			} 						// 3
+
+			if (true) { 				// 3
+			} else if(true) { 			// 3
+			} else { 					// 3
+			} 						// 3 
+
+			for (var i = 0; i < blah.length; i++) { 	// 3
+			} 							// 3
+
+			switch(true) { 				// 3
+			case 'case1': break; 			// 3
+			case 'case2': break; 			// 3
+			default: 					// 3
+			} 						// 3
+
+			try { 					// 3
+			} catch (e) { 				// 3
+			} finally { 				// 3
+			} 						// 3
 		} 							// 2
 	}); 								// 1
 })(this); 								// 0

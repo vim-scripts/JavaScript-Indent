@@ -4,10 +4,16 @@
 " URL:
 " Last Change: 	April 30, 2010
 
+" Only load one indent script per buffer
 "if exists('b:did_indent')
   "finish
 "endif
 "let b:did_indent = 1
+
+" Set the global log variable 1 = logging enabled, 0 = logging disabled
+if !exists("g:js_indent_log")
+	let g:js_indent_log = 1
+endif
 
 setlocal indentexpr=GetJsIndent(v:lnum)
 setlocal indentkeys=0{,0},0),:,!^F,o,O,e,*<Return>,=*/
@@ -32,13 +38,13 @@ let s:js_m_anon_beg = s:js_s_anon_beg . '\s*{\s*'
 let s:js_m_anon_end = '\s*}\s*' . s:js_s_anon_end
 
 " Simple control blocks (those not beginngin with "{")
-let s:js_s_cntrl_beg = '\(\(\(if\|for\|with\)\s*(.*)\)\|try\)\s*' 		
+let s:js_s_cntrl_beg = '\(\(\(if\|for\|with\|while\)\s*(.*)\)\|\(try\|do\)\)\s*' 		
 let s:js_s_cntrl_mid = '\(\(\(else\s*if\|catch\)\s*(.*)\)\|\(finally\|else\)\)\s*'
 
 " Multi line control blocks (those beginning with "{")
 let s:js_m_cntrl_beg = s:js_s_cntrl_beg . '\s*{\s*'
 let s:js_m_cntrl_mid = '}\=\s*' . s:js_s_cntrl_mid . '\s*{\s*'
-let s:js_m_cntrl_end = '}\s*'
+let s:js_m_cntrl_end = '^[^{]*}\s*\(while\s*(.*)\)\=\s*;\=\s*'
 
 " Multi line declarations & invocations
 let s:js_multi_beg = '([^()]*\s*'
@@ -53,12 +59,10 @@ let s:js_multi_invok_end = s:js_s_multi_end . '[;,]\{1}\s*'
 let s:js_s_switch_beg = 'switch\s*(.*)\s*' "Actually not allowed. 
 let s:js_m_switch_beg = s:js_s_switch_beg . '\s*{\s*'
 
-let s:js_switch_mid = '\(case.*\|default\)\s*:\s*'
+let s:js_switch_mid = '^.*\(case.*\|default\)\s*:\s*'
 
 " Single line comment (// xxx)
 let s:syn_comment = 'Comment'
-
-echo "} // 0" =~ s:js_object_end . s:js_line_comment . '$'
 
 
 " 2. Aux. Functions
@@ -102,6 +106,18 @@ function! s:IsComment(lnum)
 
 	return s:IsInComment(a:lnum, 1) && s:IsInComment(a:lnum, strlen(line)) "Doesn't absolutely work.  Only Probably!
 endfunction
+ 
+
+
+" = Method: Log
+"
+" Logs a message to the stdout.
+function! s:Log(msg)
+	if g:js_indent_log
+		echo "LOG: " . a:msg
+	endif
+endfunction
+
 
 
 " 3. Indenter
@@ -112,16 +128,16 @@ function! GetJsIndent(lnum)
 
 	" First line, start at indent = 0
 	if pnum == 0
-		echo "No, noncomment lines prior to: " . a:lnum
+		call s:Log("No, noncomment lines prior to: ")
 		return 0
 	endif
 
 	" Grab the second non-comment line prior to this line
 	let ppnum = s:GetNonCommentLine(pnum-1)
 
-	echo "Line: " . a:lnum
-	echo "PLine: " . pnum
-	echo "PPLine: " . ppnum
+	call s:Log("Line: " . a:lnum)
+	call s:Log("PLine: " . pnum)
+	call s:Log("PPLine: " . ppnum)
 
 	" Grab the lines themselves.
 	let line = getline(a:lnum)
@@ -134,45 +150,45 @@ function! GetJsIndent(lnum)
 	" Handle: Immediately executed anonymous functions
 	" ================================================'
 	if pline =~ s:js_s_anon_beg . s:js_line_comment . '$'
-		echo "PLine matched anonymous function without ending {"
+		call s:Log("PLine matched anonymous function without ending {")
 		if line =~ s:js_object_beg . s:js_line_comment . '$'
-			echo "Line matched object beginning"
+			call s:Log("Line matched object beginning")
 			return ind
 		else
-			echo "Line didn't match object beginning. NOT SURE WHAT TO DO!"
+			call s:Log("Line didn't match object beginning. NOT SURE WHAT TO DO!")
 			return ind
 		endif
 	endif
 
 	if pline =~ s:js_m_anon_beg . s:js_line_comment . '$'
-		echo "Pline matched anonymous function with ending {"
+		call s:Log("Pline matched anonymous function with ending {")
 		if line =~ 	s:js_m_cntrl_end . s:js_line_comment . '$' || line =~ s:js_m_anon_end . s:js_line_comment . '$'
-			echo "Line matched } or anonymous function end"
+			call s:Log("Line matched } or anonymous function end")
 			return ind
 		else
-			echo "Line didn't match } or anymous function end"
+			call s:Log("Line didn't match } or anymous function end")
 			return ind + &sw
 		endif
 	endif
 
 	if line =~ '^' . s:js_s_anon_end . s:js_line_comment . '$'
-		echo "Line matched anonymous ending with )(*)"
+		call s:Log("Line matched anonymous ending with )(*)")
 		if pline =~ s:js_object_end . s:js_line_comment . '$'
-			echo "PLine matched object end"
+			call s:Log("PLine matched object end")
 			return ind
 		else
-			echo "Line didn't match object end. NOT SURE WHAT TO DO!"
+			call s:Log("Line didn't match object end. NOT SURE WHAT TO DO!")
 			return ind
 		endif
 	endif
 
 	if line  =~ s:js_m_anon_end . s:js_line_comment . '$' 
-		echo "Line matched anonymous ending with })(*)"
+		call s:Log("Line matched anonymous ending with })(*)")
 		if pline =~ s:js_object_beg . s:js_line_comment . '$'
-			echo "PLine matched object beginning"
+			call s:Log("PLine matched object beginning")
 			return ind 
 		else
-			echo "PLine didnt' match object beginning"
+			call s:Log("PLine didnt' match object beginning")
 			return ind - &sw
 		endif
 	endif
@@ -182,107 +198,120 @@ function! GetJsIndent(lnum)
 	" Handle: Mutli-Line Block Invocation/Function Declaration
 	" ========================================================
 	if pline =~ s:js_multi_beg . s:js_line_comment . '$'
-		echo "Pline matched multi invoke/declare"
-		return ind + &sw
+		if line !~ s:js_multi_invok_end
+			call s:Log("Pline matched multi invoke/declare")
+			return ind + &sw
+		endif 
 	endif
 
 	if pline =~ s:js_s_multi_end . s:js_line_comment . '$'
-		echo "Pline matched multi end without inline {"
+		call s:Log("Pline matched multi end without inline {")
 		if line =~ s:js_object_beg . s:js_line_comment . '$'
-			echo "Line matched object beg"
+			call s:Log("Line matched object beg")
 			return ind - &sw
 		else
-			echo "line didn't match object beginning"
+			call s:Log("line didn't match object beginning")
 			return ind 
 		endif
 	endif
 
 	if pline =~ s:js_m_multi_end . s:js_line_comment . '$'
-		echo "Pline matched multi end with inline {"
+		call s:Log("Pline matched multi end with inline {")
 		if line =~ s:js_object_end . s:js_line_comment . '$'
-			echo "Line matched object end"
+			call s:Log("Line matched object end")
 			return ind - &sw
 		else
-			echo "Line didn't matched object end"
+			call s:Log("Line didn't matched object end")
 			return ind
 		endif
 	endif
 
 	if ppline =~ s:js_s_multi_end . s:js_line_comment . '$' &&
 				\ pline !~ s:js_object_beg . s:js_line_comment . '$'
-		echo "PPLine matched multi invoke/declaration end without inline {"
+		call s:Log("PPLine matched multi invoke/declaration end without inline {")
 		return ind - &sw
 	endif
 
 	" Handle: Multi-Line Invocation
 	" =============================
+	if pline =~ s:js_multi_invok_beg . s:js_line_comment . '$'
+		call s:Log("PLine matched multi line invoke")
+		if line =~ s:js_multi_invok_end . s:js_line_comment . '$'
+			call s:Log("Pline matched multi line invoke end")
+			return ind
+		else 
+			call s:Log("Pline didn't match multi line invoke end")
+			return ind + &sw
+		endif 
+	endif
+
 	if line =~ s:js_multi_invok_end . s:js_line_comment . '$'
-		echo "Pline matched multi invocation end"
+		call s:Log("Pline matched multi invocation end")
 		return ind - &sw
 	endif
-	
+
 
 	" Handle: Switch Control Blocks
 	" =============================
 	if pline =~ s:js_m_switch_beg . s:js_line_comment . '$'
-		echo "PLine matched switch cntrl beginning"
+		call s:Log("PLine matched switch cntrl beginning")
 		return ind
 	endif
 
-	if pline =~ s:js_switch_mid . s:js_line_comment . '$'
-		echo "PLine matched switch cntrl mid"
-		if line =~ s:js_switch_mid . s:js_line_comment . '$'
-			echo "Line matched a cntrl mid"
+	if pline =~ s:js_switch_mid
+		call s:Log("PLine matched switch cntrl mid")
+		if line =~ s:js_switch_mid || line =~ s:js_object_end . s:js_line_comment . '$'
+			call s:Log("Line matched a cntrl mid")
 			return ind
 		else
-			echo "Line didnt matcha  cntrl mid"
+			call s:Log("Line didnt matcha  cntrl mid")
 			return ind + &sw
 		endif 
 	endif
 
 	if line =~ s:js_switch_mid " Doesn't need end anchor
-		echo "Line matched cntrl mid"
+		call s:Log("Line matched switch cntrl mid")
 		return ind - &sw
 	endif
 
 	" Handle: Single Line Control Blocks
 	" ==========================
 	if pline =~ s:js_s_cntrl_beg . s:js_line_comment . '$'
-		echo "Pline matched single line control beg"
+		call s:Log("Pline matched single line control beg")
 		if line =~ s:js_s_cntrl_mid. s:js_line_comment . '$' || line =~ s:js_object_beg. s:js_line_comment . '$'
-			echo "Line matched single line control mid"
+			call s:Log("Line matched single line control mid")
 			return ind
 		else
-			echo "Line didn't match single line control mid"
+			call s:Log("Line didn't match single line control mid")
 			return ind + &sw
 		endif
 	endif
 
 	if pline =~ s:js_s_cntrl_mid . s:js_line_comment . '$'
-		echo "Pline matched single line control mid"
+		call s:Log("Pline matched single line control mid")
 		if line =~ s:js_s_cntrl_mid . s:js_line_comment . '$' || line =~ s:js_object_beg . s:js_line_comment . '$' 
-			echo "Line matched single line control mid"
+			call s:Log("Line matched single line control mid")
 			return ind
 		else
-			echo "Line didn't match single line control mid"
+			call s:Log("Line didn't match single line control mid")
 			return ind + &sw
 		endif
 	endif
 
 	if line =~ s:js_s_cntrl_mid . s:js_line_comment . '$'
-		echo "Line matched single line control mid"
+		call s:Log("Line matched single line control mid")
 		if pline =~ s:js_m_cntrl_end . s:js_line_comment . '$'
-			echo "PLine matched multi line control end"
+			call s:Log("PLine matched multi line control end")
 			return ind
 		else
-			echo "Pline didn't match object end"
+			call s:Log("Pline didn't match object end")
 			return ind - &sw
 		endif
 	endif
 
 	if ( ppline =~ s:js_s_cntrl_beg . s:js_line_comment . '$' || ppline =~ s:js_s_cntrl_mid . s:js_line_comment . '$' ) &&
 				\ pline !~ s:js_object_beg . s:js_line_comment . '$'
-		echo "PPLine matched single line control beg or mid"
+		call s:Log("PPLine matched single line control beg or mid")
 		return ind - &sw
 	endif
 
@@ -290,61 +319,67 @@ function! GetJsIndent(lnum)
 	" Handle: Multi Line Cntrl Blocks
 	" ===============================
 	if pline =~ s:js_m_cntrl_beg . s:js_line_comment . '$'
-		echo "Pline matched multi line control beg"
+		call s:Log("Pline matched multi line control beg")
 		if line =~ s:js_m_cntrl_mid . s:js_line_comment . '$' || line =~ s:js_m_cntrl_end . s:js_line_comment . '$'
-			echo "Line matched multi line control mid or end"
+			call s:Log("Line matched multi line control mid or end")
 			return ind
 		else
-			echo "Line didn't match multi line control mid or end"
+			call s:Log("Line didn't match multi line control mid or end")
 			return ind + &sw
 		endif
 	endif
 
 	if pline =~ s:js_m_cntrl_mid . s:js_line_comment . '$'
-		echo "Pline matched multi line control mid"
+		call s:Log("Pline matched multi line control mid")
 		if line =~ s:js_m_cntrl_mid . s:js_line_comment . '$' || line =~ s:js_m_cntrl_end . s:js_line_comment . '$'
-			echo "Line matched multi line control mid or end"
+			call s:Log("Line matched multi line control mid or end")
 			return ind
 		else
-			echo "Line didn't match multi line control mid or end"
+			call s:Log("Line didn't match multi line control mid or end")
 			return ind + &sw
 		endif
 	endif
 
 	if line =~ s:js_m_cntrl_mid . s:js_line_comment . '$'
-		echo "Line matched multi line control mid"
+		call s:Log("Line matched multi line control mid")
 		if pline =~ s:js_m_cntrl_end . s:js_line_comment . '$'
-			echo "PLine matched multi line control end"
+			call s:Log("PLine matched multi line control end")
 			return ind
 		else 
-			echo "PLine didn't match multi line control end"
+			call s:Log("PLine didn't match multi line control end")
 			return ind - &sw
 		endif
 	endif
 
-	"if line =~ s:js_m_cntrl_end . s:js_line_comment . '$'
-		"echo "Line matched multi line control end"
-		"return ind - &sw
-	"endif
+	if line =~ s:js_m_cntrl_end . s:js_line_comment . '$'
+		call s:Log("Line matched multi line control end")
+		if pline =~ s:js_object_beg . s:js_line_comment . '$'
+			call s:Log("Pline matched object beginning")
+			return ind
+		else 
+			call s:Log("Pline didn't match object beginning")
+			return ind - &sw
+		endif
+	endif
 
 	" Handle: Basic Objects
 	" =====================
 	if pline =~ s:js_object_beg . s:js_line_comment . '$'
-		echo "PLine matched object beginning"
+		call s:Log("PLine matched object beginning")
 		if line =~ s:js_object_end . s:js_line_comment . '$'
-			echo "Line matched object end"
+			call s:Log("Line matched object end")
 			return ind
 		else 
-			echo "Line didn't match object end"
+			call s:Log("Line didn't match object end")
 			return ind + &sw
 		endif
 	endif
 
 	if line =~ s:js_object_end . s:js_line_comment . '$'
-		echo "Line matched object end"
+		call s:Log("Line matched object end")
 		return ind - &sw
 	endif
 
-	echo "Line didn't match anything.  Retaining indent"
+	call s:Log("Line didn't match anything.  Retaining indent")
 	return ind
 endfunction

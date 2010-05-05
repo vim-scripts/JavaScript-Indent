@@ -8,13 +8,19 @@
 "		g:html_indent_strict_table -- inhibit 'O -' elements
 
 " Only load this indent file when no other was loaded.
-if exists("b:did_indent")
-    finish
+"if exists("b:did_indent")
+    "finish
+"endif
+"let b:did_indent = 1
+
+if exists("g:js_indent") 
+	so g:js_indent
+else 
+	ru! indent/javascript.vim
 endif
-let b:did_indent = 1
 
+echo "Sourcing html indent"
 
-source javascript.vim
 
 " [-- local settings (must come before aborting the script) --]
 setlocal indentexpr=HtmlIndentGetter(v:lnum)
@@ -172,6 +178,8 @@ fun! <SID>HtmlIndentSum(lnum, style)
 endfun
 
 fun! HtmlIndentGetter(lnum)
+	
+	echo "Grabbing html indent for line: " . a:lnum
     " Find a non-empty line above the current line.
     let lnum = prevnonblank(a:lnum - 1)
 
@@ -195,7 +203,7 @@ fun! HtmlIndentGetter(lnum)
     endif
 
     " [-- special handling for <javascript>: use cindent --]
-    let js = '<script\s*type\s*=\s*javascript'
+    let js = '<script.*type\s*=.*javascript'
 
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     " by Tye Zdrojewski <zdro@yahoo.com>, 05 Jun 2006
@@ -205,19 +213,15 @@ fun! HtmlIndentGetter(lnum)
     "      the pair will still match if we are before the beginning of the
     "      pair.
     "
-    
     if   0 < searchpair(js, '', '</script>', 'nWb')
     \ && 0 < searchpair(js, '', '</script>', 'nW')
 	" we're inside javascript
-	if getline(lnum) !~ js && getline(a:lnum) != '</script>'
+	
+	if getline(lnum) !~ js && getline(a:lnum) !~ '</script>'
 	    if restore_ic == 0
 	      setlocal noic
-	    endif
-		
-		let l:ind = GetJsIndent(a:lnum)
-
-	    echo l:ind
-	    return l:ind
+	    endif	
+		return GetJsIndent(a:lnum)
 	endif
     endif
 
