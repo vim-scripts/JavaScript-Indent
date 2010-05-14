@@ -59,16 +59,16 @@ var x = { 				// 0
 
 // Case: Function(4)
 function $blah( 	// 0 
-	x, 		// 1
-	y, 		// 1
-	z ) { 	// 1
+x, 		// 1
+y, 		// 1
+z ) { 	// 1
 } 			// 0
 
 // Case: Function (5)
 function $blah( 	// 0 
-	x, 		// 1
-	y, 		// 1
-	z ) { 	// 1
+x, 		// 1
+y, 		// 1
+z ) { 	// 1
 	x; 		// 1
 } 			// 0
 
@@ -92,15 +92,15 @@ if(x) 	// 0
 
 // = Case: if (4)
 if( x == y && 	// 0
-	y == z || 	// 1
-	z == w) { 	// 1
+y == z || 	// 1
+z == w) { 	// 1
 	x; 		// 1
 } 			// 0
 
 // = Case: if (4a)
 if( x == y && 	// 0
-	y == z || 	// 1
-	z == w)  	// 1
+y == z || 	// 1
+z == w)  	// 1
 { 			// 0
 	x; 		// 1
 } 			// 0
@@ -398,9 +398,9 @@ $(document).bind('click', function() { 	// 0
 			} 							// 3
 
 			switch(true) { 				// 3
-			case 'case1': break; 			// 3
-			case 'case2': break; 			// 3
-			default: 					// 3
+				case 'case1': break; 			// 3
+				case 'case2': break; 			// 3
+				default: 					// 3
 			} 						// 3
 
 			try { 					// 3

@@ -4,11 +4,14 @@
 " URL:
 " Last Change: 	April 30, 2010
 
+" 0. Standard Stuff
+" =================
+
 " Only load one indent script per buffer
-"if exists('b:did_indent')
-  "finish
-"endif
-"let b:did_indent = 1
+if exists('b:did_indent')
+  finish
+endif
+let b:did_indent = 1
 
 " Set the global log variable 1 = logging enabled, 0 = logging disabled
 if !exists("g:js_indent_log")
@@ -16,8 +19,7 @@ if !exists("g:js_indent_log")
 endif
 
 setlocal indentexpr=GetJsIndent(v:lnum)
-setlocal indentkeys=0{,0},0),:,!^F,o,O,e,*<Return>,=*/
-
+setlocal indentkeys=0{,0},o,O,e,!<Tab>,*<Return>
 
 " 1. Variables
 " ============
@@ -30,16 +32,9 @@ let s:js_line_comment = '\s*\(//.*\)*'
 let s:js_object_beg = '[{\[]\s*'
 let s:js_object_end = '^[^][{}]*[}\]][;,]\=\s*'
 
-" Immediately Executed Anonymous Function
-let s:js_s_anon_beg = '(\s*function\s*(.*)\s*'
-let s:js_s_anon_end = ')(.*)[;,]\s*'
-
-let s:js_m_anon_beg = s:js_s_anon_beg . '\s*{\s*'
-let s:js_m_anon_end = '\s*}\s*' . s:js_s_anon_end
-
 " Simple control blocks (those not beginngin with "{")
-let s:js_s_cntrl_beg = '\(\(\(if\|for\|with\|while\)\s*(.*)\)\|\(try\|do\)\)\s*' 		
-let s:js_s_cntrl_mid = '\(\(\(else\s*if\|catch\)\s*(.*)\)\|\(finally\|else\)\)\s*'
+let s:js_s_cntrl_beg = '^\s*\(\(\(if\|for\|with\|while\)\s*(.*)\)\|\(try\|do\)\)\s*' 		
+let s:js_s_cntrl_mid = '^\s*\(\(\(else\s*if\|catch\)\s*(.*)\)\|\(finally\|else\)\)\s*'
 
 " Multi line control blocks (those beginning with "{")
 let s:js_m_cntrl_beg = s:js_s_cntrl_beg . '\s*{\s*'
@@ -58,12 +53,10 @@ let s:js_multi_invok_end = s:js_s_multi_end . '[;,]\{1}\s*'
 " Special switch control
 let s:js_s_switch_beg = 'switch\s*(.*)\s*' "Actually not allowed. 
 let s:js_m_switch_beg = s:js_s_switch_beg . '\s*{\s*'
-
 let s:js_switch_mid = '^.*\(case.*\|default\)\s*:\s*'
 
 " Single line comment (// xxx)
-let s:syn_comment = 'Comment'
-
+let s:syn_comment = '\(Comment\|String\)'
 
 " 2. Aux. Functions
 " =================
@@ -93,7 +86,7 @@ endfunction
 " Determines whether the specified position is contained in a comment. "Note:
 " This depends on a 
 function! s:IsInComment(lnum, cnum) 
-	return synIDattr(synID(a:lnum, a:cnum, 1), 'name') =~ s:syn_comment
+	return synIDattr(synID(a:lnum, a:cnum, 1), 'name') =~? s:syn_comment
 endfunction
 
 
@@ -106,7 +99,7 @@ function! s:IsComment(lnum)
 
 	return s:IsInComment(a:lnum, 1) && s:IsInComment(a:lnum, strlen(line)) "Doesn't absolutely work.  Only Probably!
 endfunction
- 
+
 
 
 " = Method: Log
@@ -146,54 +139,6 @@ function! GetJsIndent(lnum)
 
 	" Determine the current level of indentation
 	let ind = indent(pnum)
-
-	" Handle: Immediately executed anonymous functions
-	" ================================================'
-	if pline =~ s:js_s_anon_beg . s:js_line_comment . '$'
-		call s:Log("PLine matched anonymous function without ending {")
-		if line =~ s:js_object_beg . s:js_line_comment . '$'
-			call s:Log("Line matched object beginning")
-			return ind
-		else
-			call s:Log("Line didn't match object beginning. NOT SURE WHAT TO DO!")
-			return ind
-		endif
-	endif
-
-	if pline =~ s:js_m_anon_beg . s:js_line_comment . '$'
-		call s:Log("Pline matched anonymous function with ending {")
-		if line =~ 	s:js_m_cntrl_end . s:js_line_comment . '$' || line =~ s:js_m_anon_end . s:js_line_comment . '$'
-			call s:Log("Line matched } or anonymous function end")
-			return ind
-		else
-			call s:Log("Line didn't match } or anymous function end")
-			return ind + &sw
-		endif
-	endif
-
-	if line =~ '^' . s:js_s_anon_end . s:js_line_comment . '$'
-		call s:Log("Line matched anonymous ending with )(*)")
-		if pline =~ s:js_object_end . s:js_line_comment . '$'
-			call s:Log("PLine matched object end")
-			return ind
-		else
-			call s:Log("Line didn't match object end. NOT SURE WHAT TO DO!")
-			return ind
-		endif
-	endif
-
-	if line  =~ s:js_m_anon_end . s:js_line_comment . '$' 
-		call s:Log("Line matched anonymous ending with })(*)")
-		if pline =~ s:js_object_beg . s:js_line_comment . '$'
-			call s:Log("PLine matched object beginning")
-			return ind 
-		else
-			call s:Log("PLine didnt' match object beginning")
-			return ind - &sw
-		endif
-	endif
-
-
 
 	" Handle: Mutli-Line Block Invocation/Function Declaration
 	" ========================================================
@@ -264,7 +209,7 @@ function! GetJsIndent(lnum)
 			call s:Log("Line matched a cntrl mid")
 			return ind
 		else
-			call s:Log("Line didnt matcha  cntrl mid")
+			call s:Log("Line didnt match a cntrl mid")
 			return ind + &sw
 		endif 
 	endif
@@ -316,68 +261,69 @@ function! GetJsIndent(lnum)
 	endif
 
 
-	" Handle: Multi Line Cntrl Blocks
-	" ===============================
-	if pline =~ s:js_m_cntrl_beg . s:js_line_comment . '$'
-		call s:Log("Pline matched multi line control beg")
-		if line =~ s:js_m_cntrl_mid . s:js_line_comment . '$' || line =~ s:js_m_cntrl_end . s:js_line_comment . '$'
-			call s:Log("Line matched multi line control mid or end")
-			return ind
+	" Handle: {}
+	" ==========
+	if line =~ '^[^{]*}' && !s:IsComment(a:lnum) && line !~ '"[^}]*}[^}]*"'
+		call s:Log("Line matched closing bracket")
+
+		" Save the cursor position.
+		let curpos = getpos(".")
+
+		" Set the cursor position to the beginning of the line (default
+		" behavior when using ==)
+		call setpos(".", [0, a:lnum, 1, 0])
+
+		" Search for the opening tag
+		let mnum = searchpair('{', '', '}', 'bW', 
+					\ 'synIDattr(synID(line("."), col("."), 0), "name") =~? s:syn_comment' )
+		
+		"Restore the cursor position
+		call setpos(".", curpos)
+
+		let mind = indent(mnum)
+		let mline = getline(mnum)
+
+		call s:Log("Matched found at: " . mnum)
+
+		if mline =~ s:js_m_multi_end " Fixes multi line invocation
+			call s:Log("MLine matched multi line invocation")
+			return mind - &sw
 		else
-			call s:Log("Line didn't match multi line control mid or end")
-			return ind + &sw
+			return mind
 		endif
 	endif
 
-	if pline =~ s:js_m_cntrl_mid . s:js_line_comment . '$'
-		call s:Log("Pline matched multi line control mid")
-		if line =~ s:js_m_cntrl_mid . s:js_line_comment . '$' || line =~ s:js_m_cntrl_end . s:js_line_comment . '$'
-			call s:Log("Line matched multi line control mid or end")
-			return ind
-		else
-			call s:Log("Line didn't match multi line control mid or end")
-			return ind + &sw
-		endif
+	if pline =~ '{[^}]*$' && pline !~ '"[^{]*{[^{]*"'
+		call s:Log("Pline matched opening {")
+		return ind + &sw
 	endif
 
-	if line =~ s:js_m_cntrl_mid . s:js_line_comment . '$'
-		call s:Log("Line matched multi line control mid")
-		if pline =~ s:js_m_cntrl_end . s:js_line_comment . '$'
-			call s:Log("PLine matched multi line control end")
-			return ind
-		else 
-			call s:Log("PLine didn't match multi line control end")
-			return ind - &sw
-		endif
+	" Handle: []
+	" ==========
+	if line =~ '^[^\[]*\]' && !s:IsComment(a:lnum) && line !~ '"[^\]]*\][^\]]*"'
+		call s:Log("Line matched closing ]")
+		
+		" Save the cursor position.
+		let curpos = getpos(".")
+
+		" Set the cursor position to the beginning of the line (default
+		" behavior when using ==)
+		call setpos(".", [0, a:lnum, 1, 0])
+
+		" Search for the opening tag
+		let mnum = searchpair('\[', '', '\]', 'bW', 
+					\ 'synIDattr(synID(line("."), col("."), 0), "name") =~? s:syn_comment' )
+		
+		"Restore the cursor position
+		call setpos(".", curpos)
+
+		call s:Log("Matched found at: " . mnum)
+		return indent(mnum)
 	endif
 
-	if line =~ s:js_m_cntrl_end . s:js_line_comment . '$'
-		call s:Log("Line matched multi line control end")
-		if pline =~ s:js_object_beg . s:js_line_comment . '$'
-			call s:Log("Pline matched object beginning")
-			return ind
-		else 
-			call s:Log("Pline didn't match object beginning")
-			return ind - &sw
-		endif
-	endif
-
-	" Handle: Basic Objects
-	" =====================
-	if pline =~ s:js_object_beg . s:js_line_comment . '$'
-		call s:Log("PLine matched object beginning")
-		if line =~ s:js_object_end . s:js_line_comment . '$'
-			call s:Log("Line matched object end")
-			return ind
-		else 
-			call s:Log("Line didn't match object end")
-			return ind + &sw
-		endif
-	endif
-
-	if line =~ s:js_object_end . s:js_line_comment . '$'
-		call s:Log("Line matched object end")
-		return ind - &sw
+	if pline =~ '\[[^\]]*$' && pline !~ '"[^\[]*\[[^\[]*"'
+		call s:Log("Pline matched opening [")
+		return ind + &sw
 	endif
 
 	call s:Log("Line didn't match anything.  Retaining indent")
