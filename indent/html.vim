@@ -1,4 +1,3 @@
-
 " Description:	html indenter
 " Author:	Johannes Zellner <johannes@zellner.org>
 " Last Change:	Mo, 05 Jun 2006 22:32:41 CEST
@@ -19,7 +18,6 @@ else
 	ru! indent/javascript.vim
 endif
 
-echo "Sourcing html indent"
 
 
 " [-- local settings (must come before aborting the script) --]
